@@ -1,0 +1,42 @@
+name: AWS Automation Project 1.
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy-and-scan:
+    name: Deploy WordPress on EC2 and IaC Scans
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      # Terraform setup
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          terraform_version: 1.0.0
+
+      # AWS credentials setup
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: eu-west-2
+ 
+      # Initialize Terraform
+      - name: Initialize Terraform
+        run: terraform init
+
+      # Deploy Terraform
+      - name: Deploy Terraform
+        run: terraform apply -auto-approve
+
+      # Get WordPress instance public IP
+      - name: Get WordPress Instance IP
+        id: get_ip
+        run: echo "::set-output name=ip_address::$(terraform output -json instance_public_ip | jq -r '.')"
