@@ -3,6 +3,7 @@ name: SAST Scan Project 3
 permissions:
   contents: read
   security-events: write
+  actions: read
 
 on:
   push:
@@ -15,7 +16,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
