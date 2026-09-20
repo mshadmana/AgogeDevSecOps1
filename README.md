@@ -1,62 +1,145 @@
-# AgogeDevSecOps1
-DevSecOps Projects Overview
 
-## Introduction
-This security document outlines a DevSecOps project implementation incorporating Static Application Security Testing (SAST), Software Composition Analysis (SCA), and Infrastructure as Code (IaC) scanning best practices on applications running within AWS infrastrcuture, utilising GitHub Actions with workflows
+# DevSecOps Pipeline with GitHub Actions & AWS
 
-## Project Goal
-- Implement security measures throughout the software development lifecycle, creating a Secure Software Development Life Cycle (SSDLC).
-- Automate security testing to identify vulnerabilities early in the development process, shifting security left.
-- Integrate security into the CI/CD pipeline for continuous security monitoring.
-- Ensure compliance with security best practices and industry standards.
-- Enable PR blocking for Critical and High Vulnerabilities.
+A security-focused DevSecOps simulation project built as part of the Cyber Agoge Bootcamp.
 
-## Components
-### 1. Infrastructure as Code (IaC) Scanning
-IaC scanning ensures that the infrastructure configuration code adheres to security best practices and compliance standards. It helps in identifying misconfigurations and security loopholes in cloud infrastructure.
+This project demonstrates how automated security testing can be integrated into a CI/CD pipeline to identify vulnerabilities in application code, open-source dependencies, Infrastructure as Code, secrets, and container images.
 
-#### Tools:
-- **Terraform Compliance**: Assesses Terraform scripts against security policies defined using BDD-style language to ensure compliance.
-- **Trivy**: Provides automated IaC scanning to identify security misconfigurations across AWS, Azure, and GCP cloud environments.
+> **Educational lab:** The application and infrastructure contain intentional security weaknesses so that the security tools have findings to detect.
 
-### 2. Static Application Security Testing (SAST)
-SAST involves analyzing the application's source code or binary code without executing it. This is done to identify security vulnerabilities, coding errors, and other issues in the codebase
+## Scenario
 
-#### Tools:
-- **CodeQl**: Provides static code analysis to identify bugs, vulnerabilities, and code smells in various programming languages.
+NexusCore Technologies is a simulated fintech company looking to introduce security earlier into its software development lifecycle.
 
-### 3. Software Composition Analysis (SCA)
-SCA focuses on identifying and managing open-source components and third-party libraries used in the application. It helps in detecting known vulnerabilities in dependencies.
+The goal of this project is to implement an automated DevSecOps pipeline that performs multiple security checks whenever code is pushed or a pull request is created.
 
-#### Tools:
-- **Trivy**: Scans project dependencies and identifies vulnerabilities based on the National Vulnerability Database (NVD) and other sources.
+## Pipeline Architecture
 
-1. **Integration with CI/CD Pipeline**: Incorporate SAST, SCA, and IaC scanning tools into the CI/CD pipeline to automate security testing.
-2. **Pre-commit and Post-commit Hooks**: Implement pre-commit hooks to trigger security scans before code is merged into the main branch. Also, execute post-commit hooks to perform additional security checks after code deployment.
-3. **Custom Policies**: Define custom security policies based on project requirements and industry standards to ensure comprehensive security coverage.
-4. **Automated Remediation**: Configure automated remediation processes to fix identified vulnerabilities or misconfigurations whenever possible.
-5. **Reporting and Notifications**: Generate detailed reports on security findings and send notifications to relevant stakeholders for prompt remediation.
+```text
+Developer Push / Pull Request
+        |
+        v
+GitHub Actions
+        |
+        +--> CodeQL SAST
+        |
+        +--> Trivy SCA
+        |
+        +--> Trivy IaC Scanning
+        |
+        +--> Gitleaks Secret Detection
+        |
+        +--> Docker Build
+                |
+                v
+        Trivy Container Scan
+                |
+                v
+        Security Scan Summary
+````
 
-## Conclusion
-By integrating SAST, SCA, and IaC scanning practices into the DevSecOps pipeline, the project aims to enhance the security posture of the running applications in AWS, reducing vulnerabilities, and ensure compliance throughout the software development lifecycle.
+## Security Tools
 
-# DevSecOps Project Diagram
+| Tool           | Purpose                                    |
+| -------------- | ------------------------------------------ |
+| CodeQL         | Static Application Security Testing (SAST) |
+| Trivy          | Dependency / Software Composition Analysis |
+| Trivy          | Terraform Infrastructure as Code scanning  |
+| Gitleaks       | Secret detection                           |
+| Docker         | Container image creation                   |
+| Trivy          | Container vulnerability scanning           |
+| GitHub Actions | CI/CD automation                           |
 
-```mermaid
-flowchart LR
-    A[GitHub Repos] --> B{CI/CD Pipeline GH Actions}
-    B --> C[SAST]
-    B --> D[SCA]
-    B --> E[IaC Scanning]
-    C --> F[Static Code Analysis]
-    D --> G[Dependency Check]
-    E --> H[Infrastructure Configuration]
-    F --> I[Code Vulnerabilities]
-    G --> J[Dependency Vulnerabilities]
-    H --> K[Infrastructure Misconfigurations]
-    I --> L[Remediation Actions]
-    J --> L
-    K --> L
-    L --> M[Reporting and Notifications]
-    M --> N[Development Team]
-    M --> O[Security Team]
+## Project Structure
+
+```text
+.
+├── .github/
+│   └── workflows/
+│       └── devsecops-pipeline.yml
+├── src/
+│   └── vulnerable_app.py
+├── terraform/
+│   └── main.tf
+├── Dockerfile
+├── .dockerignore
+├── requirements.txt
+└── README.md
+```
+
+## Intentional Application Security Issues
+
+The Flask application contains deliberately insecure code for security testing, including examples of:
+
+* hardcoded secrets
+* SQL injection
+* command injection
+* server-side template injection
+* insecure data handling
+* path traversal
+* Flask debug mode enabled
+
+These issues are included only for educational security scanning.
+
+## Intentional Infrastructure Misconfigurations
+
+The Terraform configuration contains intentionally insecure AWS settings, including:
+
+* disabled S3 public access protections
+* unrestricted security group rules using `0.0.0.0/0`
+* an EC2 instance with a public IP
+* an unencrypted root volume
+* a hardcoded password in EC2 user data
+
+The infrastructure is intended to be scanned by Trivy and is not intended for production deployment.
+
+## CI/CD Security Pipeline
+
+The GitHub Actions workflow performs the following stages:
+
+1. **SAST - CodeQL**
+
+   * Analyses Python source code for security vulnerabilities.
+
+2. **SCA - Trivy**
+
+   * Scans project dependencies for known vulnerabilities.
+
+3. **IaC Security - Trivy**
+
+   * Analyses Terraform configuration for cloud security misconfigurations.
+
+4. **Secret Detection - Gitleaks**
+
+   * Scans source files and Git history for exposed secrets.
+
+5. **Container Security - Trivy**
+
+   * Builds the Docker image and scans it for known vulnerabilities.
+
+6. **Security Summary**
+
+   * Displays the result of each security job in the GitHub Actions workflow summary.
+
+## DevSecOps Concepts Demonstrated
+
+This project demonstrates:
+
+* shift-left security
+* automated security testing
+* Static Application Security Testing
+* Software Composition Analysis
+* Infrastructure as Code security scanning
+* secret detection
+* container security
+* CI/CD security automation
+* GitHub Code Scanning integration
+
+## Important
+
+This repository intentionally contains vulnerable code and insecure infrastructure configurations for training purposes.
+
+Do not deploy the Terraform infrastructure or use the application in a production environment.
+
+```
+```
