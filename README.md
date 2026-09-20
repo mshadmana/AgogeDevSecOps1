@@ -140,6 +140,3 @@ This project demonstrates:
 This repository intentionally contains vulnerable code and insecure infrastructure configurations for training purposes.
 
 Do not deploy the Terraform infrastructure or use the application in a production environment.
-
-```
-```
