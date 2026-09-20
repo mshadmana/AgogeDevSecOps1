@@ -1,4 +1,4 @@
-````markdown
+
 # DevSecOps Pipeline with GitHub Actions & AWS
 
 A security-focused DevSecOps simulation project built as part of the Cyber Agoge Bootcamp.
