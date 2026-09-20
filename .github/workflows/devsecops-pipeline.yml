@@ -2,7 +2,8 @@ name: DevSecOps Pipeline
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop 
+, devsecops-v2]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
