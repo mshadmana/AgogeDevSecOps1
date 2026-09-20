@@ -1,182 +1,145 @@
-@'
-name: DevSecOps Pipeline
+````markdown
+# DevSecOps Pipeline with GitHub Actions & AWS
 
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
-  workflow_dispatch:
+A security-focused DevSecOps simulation project built as part of the Cyber Agoge Bootcamp.
 
-env:
-  PYTHON_VERSION: '3.9'
+This project demonstrates how automated security testing can be integrated into a CI/CD pipeline to identify vulnerabilities in application code, open-source dependencies, Infrastructure as Code, secrets, and container images.
 
-jobs:
-  # ==========================================
-  # SAST - Static Application Security Testing
-  # ==========================================
-  sast-codeql:
-    name: SAST - CodeQL Analysis
-    runs-on: ubuntu-latest
+> **Educational lab:** The application and infrastructure contain intentional security weaknesses so that the security tools have findings to detect.
 
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
+## Scenario
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+NexusCore Technologies is a simulated fintech company looking to introduce security earlier into its software development lifecycle.
 
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
-        with:
-          languages: python
-          queries: security-extended
+The goal of this project is to implement an automated DevSecOps pipeline that performs multiple security checks whenever code is pushed or a pull request is created.
 
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
-        with:
-          category: "/language:python"
+## Pipeline Architecture
 
-  # ==========================================
-  # SCA - Software Composition Analysis
-  # ==========================================
-  sca-trivy:
-    name: SCA - Dependency Scanning
-    runs-on: ubuntu-latest
+```text
+Developer Push / Pull Request
+        |
+        v
+GitHub Actions
+        |
+        +--> CodeQL SAST
+        |
+        +--> Trivy SCA
+        |
+        +--> Trivy IaC Scanning
+        |
+        +--> Gitleaks Secret Detection
+        |
+        +--> Docker Build
+                |
+                v
+        Trivy Container Scan
+                |
+                v
+        Security Scan Summary
+````
 
-    permissions:
-      contents: read
-      security-events: write
+## Security Tools
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+| Tool           | Purpose                                    |
+| -------------- | ------------------------------------------ |
+| CodeQL         | Static Application Security Testing (SAST) |
+| Trivy          | Dependency / Software Composition Analysis |
+| Trivy          | Terraform Infrastructure as Code scanning  |
+| Gitleaks       | Secret detection                           |
+| Docker         | Container image creation                   |
+| Trivy          | Container vulnerability scanning           |
+| GitHub Actions | CI/CD automation                           |
 
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'fs'
-          scan-ref: '.'
-          format: 'sarif'
-          output: 'trivy-sca-results.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
+## Project Structure
 
-      - name: Upload Trivy SCA results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-sca-results.sarif'
-          category: 'sca-trivy'
+```text
+.
+├── .github/
+│   └── workflows/
+│       └── devsecops-pipeline.yml
+├── src/
+│   └── vulnerable_app.py
+├── terraform/
+│   └── main.tf
+├── Dockerfile
+├── .dockerignore
+├── requirements.txt
+└── README.md
+```
 
-  # ==========================================
-  # IaC - Infrastructure as Code Scanning
-  # ==========================================
-  iac-scanning:
-    name: IaC - Terraform Security
-    runs-on: ubuntu-latest
+## Intentional Application Security Issues
 
-    permissions:
-      contents: read
-      security-events: write
+The Flask application contains deliberately insecure code for security testing, including examples of:
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+* hardcoded secrets
+* SQL injection
+* command injection
+* server-side template injection
+* insecure data handling
+* path traversal
+* Flask debug mode enabled
 
-      - name: Run Trivy IaC scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          scan-type: 'config'
-          scan-ref: 'terraform/'
-          format: 'sarif'
-          output: 'trivy-iac-results.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
+These issues are included only for educational security scanning.
 
-      - name: Upload IaC scan results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-iac-results.sarif'
-          category: 'iac-trivy'
+## Intentional Infrastructure Misconfigurations
 
-  # ==========================================
-  # Secret Detection
-  # ==========================================
-  secret-scanning:
-    name: Secret Detection - Gitleaks
-    runs-on: ubuntu-latest
+The Terraform configuration contains intentionally insecure AWS settings, including:
 
-    permissions:
-      contents: read
+* disabled S3 public access protections
+* unrestricted security group rules using `0.0.0.0/0`
+* an EC2 instance with a public IP
+* an unencrypted root volume
+* a hardcoded password in EC2 user data
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+The infrastructure is intended to be scanned by Trivy and is not intended for production deployment.
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+## CI/CD Security Pipeline
 
-  # ==========================================
-  # Container Security
-  # ==========================================
-  container-scanning:
-    name: Container Security - Image Scan
-    runs-on: ubuntu-latest
-    needs: [sast-codeql, sca-trivy]
+The GitHub Actions workflow performs the following stages:
 
-    permissions:
-      contents: read
-      security-events: write
+1. **SAST - CodeQL**
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+   * Analyses Python source code for security vulnerabilities.
 
-      - name: Build Docker image
-        run: docker build -t devsecops-demo:latest .
+2. **SCA - Trivy**
 
-      - name: Run Trivy container scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: 'devsecops-demo:latest'
-          format: 'sarif'
-          output: 'trivy-container-results.sarif'
-          severity: 'CRITICAL,HIGH'
+   * Scans project dependencies for known vulnerabilities.
 
-      - name: Upload container scan results
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-container-results.sarif'
-          category: 'container-trivy'
+3. **IaC Security - Trivy**
 
-  # ==========================================
-  # Security Summary
-  # ==========================================
-  security-summary:
-    name: Security Scan Summary
-    runs-on: ubuntu-latest
-    needs:
-      - sast-codeql
-      - sca-trivy
-      - iac-scanning
-      - secret-scanning
-      - container-scanning
-    if: always()
+   * Analyses Terraform configuration for cloud security misconfigurations.
 
-    steps:
-      - name: Check scan results
-        run: |
-          echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "| Scan Type | Status |" >> $GITHUB_STEP_SUMMARY
-          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| SAST (CodeQL) | ${{ needs.sast-codeql.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| SCA (Trivy) | ${{ needs.sca-trivy.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| IaC Scanning | ${{ needs.iac-scanning.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Secret Detection | ${{ needs.secret-scanning.result }} |" >> $GITHUB_STEP_SUMMARY
-          echo "| Container Scan | ${{ needs.container-scanning.result }} |" >> $GITHUB_STEP_SUMMARY
-'@ | Set-Content .github\workflows\devsecops-pipeline.yml
+4. **Secret Detection - Gitleaks**
+
+   * Scans source files and Git history for exposed secrets.
+
+5. **Container Security - Trivy**
+
+   * Builds the Docker image and scans it for known vulnerabilities.
+
+6. **Security Summary**
+
+   * Displays the result of each security job in the GitHub Actions workflow summary.
+
+## DevSecOps Concepts Demonstrated
+
+This project demonstrates:
+
+* shift-left security
+* automated security testing
+* Static Application Security Testing
+* Software Composition Analysis
+* Infrastructure as Code security scanning
+* secret detection
+* container security
+* CI/CD security automation
+* GitHub Code Scanning integration
+
+## Important
+
+This repository intentionally contains vulnerable code and insecure infrastructure configurations for training purposes.
+
+Do not deploy the Terraform infrastructure or use the application in a production environment.
+
+```
+```
