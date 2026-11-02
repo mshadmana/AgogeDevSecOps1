@@ -38,3 +38,14 @@ terraform.rc
 
 __pycache__/
 *.pyc
+
+# Environment files hold secrets: never commit them
+.env
+.env.*
+
+# Personal editor and AI tool settings stay local
+.vscode/
+.claude/settings.local.json
+
+# Course downloads are not part of this project
+ai-security-toolkit*
